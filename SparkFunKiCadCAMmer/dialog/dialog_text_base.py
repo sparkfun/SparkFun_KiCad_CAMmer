@@ -157,6 +157,8 @@ class DIALOG_TEXT_BASE ( DialogShim ):
 
         # Connect Events
         self.Bind( wx.EVT_INIT_DIALOG, self.OnInitDlg )
+        self.LayersGrid.Bind( wx.grid.EVT_GRID_CELL_LEFT_CLICK, self.OnLayersGridCellClicked )
+        self.EdgesGrid.Bind( wx.grid.EVT_GRID_CELL_LEFT_CLICK, self.OnEdgesGridCellClicked )
         self.m_buttonRunCAMmer.Bind( wx.EVT_BUTTON, self.OnRunCAMmerClick )
         self.m_buttonCancel.Bind( wx.EVT_BUTTON, self.OnCancelClick )
 
@@ -166,6 +168,12 @@ class DIALOG_TEXT_BASE ( DialogShim ):
 
     # Virtual event handlers, override them in your derived class
     def OnInitDlg( self, event ):
+        pass
+
+    def OnLayersGridCellClicked( self, event ):
+        pass
+
+    def OnEdgesGridCellClicked( self, event ):
         pass
 
     def OnRunCAMmerClick( self, event ):

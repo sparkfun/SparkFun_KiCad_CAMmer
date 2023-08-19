@@ -218,3 +218,21 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
 
     def OnCancelClick(self, e):
         self.EndModal(wx.ID_CANCEL)     
+
+    def OnLayersGridCellClicked(self, event):
+        self.LayersGrid.ClearSelection()
+        #self.LayersGrid.SelectRow(event.Row)
+        if event.Col == 0:
+            # toggle checkbox
+            val = self.LayersGrid.GetCellValue(event.Row, event.Col)
+            val = "" if val else "1"
+            self.LayersGrid.SetCellValue(event.Row, event.Col, val)
+
+    def OnEdgesGridCellClicked(self, event):
+        self.EdgesGrid.ClearSelection()
+        #self.EdgesGrid.SelectRow(event.Row)
+        if event.Col == 0:
+            # toggle checkbox
+            val = self.EdgesGrid.GetCellValue(event.Row, event.Col)
+            val = "" if val else "1"
+            self.EdgesGrid.SetCellValue(event.Row, event.Col, val)

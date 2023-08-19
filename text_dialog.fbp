@@ -241,6 +241,7 @@
                                         <property name="window_extra_style"></property>
                                         <property name="window_name"></property>
                                         <property name="window_style"></property>
+                                        <event name="OnGridCellLeftClick">OnLayersGridCellClicked</event>
                                     </object>
                                 </object>
                             </object>
@@ -408,6 +409,7 @@
                                         <property name="window_extra_style"></property>
                                         <property name="window_name"></property>
                                         <property name="window_style"></property>
+                                        <event name="OnGridCellLeftClick">OnEdgesGridCellClicked</event>
                                     </object>
                                 </object>
                             </object>
