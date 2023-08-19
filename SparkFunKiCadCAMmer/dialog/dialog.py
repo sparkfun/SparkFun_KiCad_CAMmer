@@ -33,6 +33,8 @@ _APP_VERSION = get_version("_version.py")
 
 class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
 
+    empty_config = {'Layers':{},'Edges':{}}
+    # Default config in JSON style
     config_defaults = {
         'Layers':
         {
@@ -47,10 +49,24 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
             'F.Silkscreen': 'true',
             'B.Silkscreen': 'true',
             'F.Mask': 'true',
-            'B.Mask': 'true'
+            'B.Mask': 'true',
+            'Edge.Cuts': 'false',
+            'User.Comments': 'false'
         },
         'Edges':
         {
+            'F.Cu': 'false',
+            'In1.Cu': 'false',
+            'In2.Cu': 'false',
+            'In3.Cu': 'false',
+            'In4.Cu': 'false',
+            'B.Cu': 'false',
+            'F.Paste': 'false',
+            'B.Paste': 'false',
+            'F.Silkscreen': 'false',
+            'B.Silkscreen': 'false',
+            'F.Mask': 'false',
+            'B.Mask': 'false',
             'Edge.Cuts': 'true',
             'User.Comments': 'true'
         }
@@ -77,15 +93,50 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
         self.SetTitle(_APP_NAME + " - " + _APP_VERSION)
 
 
-        # Get config with defaults based on layertable
-        self.config = self.config_defaults
-        # Delete and defaults not present in layertable
+        # Load up last sessions config
+        self.config = self.empty_config
+        self.loadConfig()
+
+        # Delete any config items not present in layertable - just in case layertable has changed
         for key in self.config.keys():
+            deleteThese = []
             for layer in self.config[key].keys():
                 if layer not in layertable.keys():
-                    self.config[key].pop(layer, None)
+                    deleteThese.append(layer) # Avoids "dictionary changed size during iteration"
+            for d in deleteThese:
+                self.config[key].pop(d, None)
 
-        self.loadConfig()
+        # Copy the configuration defaults
+        # Delete any layers present in the config from file - so we don't overwrite them
+        # Also delete those which are not in layertable
+        # Then update (copy) them into the config
+        defaults = self.config_defaults
+        for key in defaults.keys():
+            deleteThese = []
+            for layer in defaults[key].keys():
+                hasKey = False
+                try:
+                    hasKey = layer in self.config[key].keys()
+                except:
+                    pass
+                if (layer not in layertable.keys()) or hasKey:
+                    deleteThese.append(layer)
+            for d in deleteThese:
+                defaults[key].pop(d, None)
+        for key in defaults.keys():
+            self.config[key].update(defaults[key])
+
+        # Add any extra layers which are present in layertable - default these to disabled
+        for key in self.config.keys():
+            addThese = []
+            for layer in layertable.keys():
+                if layer not in self.config[key].keys():
+                    addThese.append(layer)
+            for a in addThese:
+                d = {a: 'false'} # JSON style
+                self.config[key].update(d)
+
+        # Load the configuration into the Dialog grids
         self.LoadSettings()
 
         # Autosize now grid is populated
@@ -93,7 +144,7 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
         self.EdgesGrid.AutoSizeColumns()
 
     def loadConfig(self):
-        # Load up last sessions config
+        ''' Load the last sessions configuration from json file '''
         try:
             with open(self.config_file, 'r') as cf:
                 json_params = json.load(cf)
@@ -103,6 +154,7 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
             pass
 
     def saveConfig(self):
+        ''' Read the configuration from the Dialog grids and save to file '''
         try:
             with open(self.config_file, 'w') as cf:
                 json.dump(self.CurrentSettings(), cf, indent=2)
@@ -111,6 +163,8 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
             pass
             
     def LoadSettings(self):
+        ''' Load the settings from self.config into the Dialog grids '''
+
         # Delete any existing rows in LayersGrid
         if self.LayersGrid.NumberRows:
             self.LayersGrid.DeleteRows(0, self.LayersGrid.NumberRows)
@@ -118,9 +172,9 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
         self.LayersGrid.AppendRows(len(self.layertable))
         # Initialize them
         row = 0
-        for layer in self.layertable.keys():
-            enabled = "1" if (layer in self.config['Layers'].keys()) else "0"
-            self.LayersGrid.SetCellValue(row, 0, enabled)
+        for layer, enabled in self.config['Layers'].items():
+            e = "1" if enabled == 'true' else "0" # JSON style
+            self.LayersGrid.SetCellValue(row, 0, e)
             self.LayersGrid.SetCellRenderer(row, 0, wx.grid.GridCellBoolRenderer())
             self.LayersGrid.SetCellValue(row, 1, layer)
             self.LayersGrid.SetReadOnly(row, 1)
@@ -133,26 +187,28 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
         self.EdgesGrid.AppendRows(len(self.layertable))
         # Initialize them
         row = 0
-        for layer in self.layertable.keys():
-            enabled = "1" if (layer in self.config['Edges'].keys()) else "0"
-            self.EdgesGrid.SetCellValue(row, 0, enabled)
+        for layer, enabled in self.config['Edges'].items():
+            e = "1" if enabled == 'true' else "0" # JSON style
+            self.EdgesGrid.SetCellValue(row, 0, e)
             self.EdgesGrid.SetCellRenderer(row, 0, wx.grid.GridCellBoolRenderer())
             self.EdgesGrid.SetCellValue(row, 1, layer)
             self.EdgesGrid.SetReadOnly(row, 1)
             row += 1
 
     def CurrentSettings(self):
-        params = {}
+        params = self.empty_config
 
         for row in range(self.LayersGrid.GetNumberRows()):
-            enabled = True if (self.LayersGrid.GetCellValue(row, 0) == "1") else False
+            enabled = 'true' if (self.LayersGrid.GetCellValue(row, 0) == "1") else 'false' # JSON style
             layer = self.LayersGrid.GetCellValue(row, 1)
-            params['Layers'][layer] = enabled
+            d = {layer: enabled}
+            params['Layers'].update(d)
 
         for row in range(self.EdgesGrid.GetNumberRows()):
-            enabled = True if (self.EdgesGrid.GetCellValue(row, 0) == "1") else False
+            enabled = 'true' if (self.EdgesGrid.GetCellValue(row, 0) == "1") else 'false' # JSON style
             layer = self.EdgesGrid.GetCellValue(row, 1)
-            params['Edges'][layer] = enabled
+            d = {layer: enabled}
+            params['Edges'].update(d)
 
         return params
 

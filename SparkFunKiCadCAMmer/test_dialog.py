@@ -15,8 +15,6 @@ class MyApp(wx.App):
                 'F.Cu': 0,
                 'In1.Cu': 1,
                 'In2.Cu': 2,
-                'In3.Cu': 3,
-                'In4.Cu': 4,
                 'B.Cu': 5,
                 'F.Paste': 6,
                 'B.Paste': 7,
@@ -25,7 +23,8 @@ class MyApp(wx.App):
                 'F.Mask': 10,
                 'B.Mask': 11,
                 'Edge.Cuts': 12,
-                'User.Comments': 13
+                'User.Comments': 13,
+                'Fake.Fake': 20
         }
 
         self.frame = frame = Dialog(None, config_file, layertable, CAMmer(), self.run)
