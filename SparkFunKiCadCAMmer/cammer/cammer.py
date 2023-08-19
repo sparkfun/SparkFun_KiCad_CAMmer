@@ -137,13 +137,17 @@ class CAMmer():
         popt.SetScale(1)
         popt.SetMirror(False)
         popt.SetUseGerberAttributes(True)
-        popt.SetScale(1)
         popt.SetUseAuxOrigin(True)
 
         # This by gerbers only (also the name is truly horrid!)
         popt.SetSubtractMaskFromSilk(False) #remove solder mask from silk to be sure there is no silk on pads
+        popt.SetDrillMarksType(DRILL_MARKS_NO_DRILL_SHAPE)
+        popt.SetSkipPlotNPTH_Pads(False)
 
         filesToZip = []
+
+
+        # Copper, Silk, Mask
 
         for layer in layers.split(","):
             if layer not in file_ext.keys():
@@ -174,25 +178,96 @@ class CAMmer():
                     else:
                         filesToZip.append(newname)
 
-        edge = []
+
+        # Edge cuts (dimensions) and V_SCORE (from User.Comments)
+        # See: https://gitlab.com/kicad/code/kicad/-/issues/13841
+
+        allEdges = LSEQ()
         edge_ext = ""
         for e in edges.split(","):
             if e in file_ext.keys():
                 edge_ext = file_ext[e]
                 layername = e.replace(".", "_")
-                edge.append(layertable[e])
+            if e in layertable.keys():
+                allEdges.push_back(layertable[e])
 
         if edge_ext == "":
-            report += "Unknown edge(s) " + str(edges) + "\n"
+            report += "Unknown edge(s): " + str(edges) + "\n"
             sysExit= 2
         else:
-            # TODO: add edge layer merge-and-plot here. Try SetLayerSelection and SetPlotOnAllLayersSelection
-            pass
+            pctl.OpenPlotfile(layername, PLOT_FORMAT_GERBER)
+            pctl.PlotLayers(allEdges)
+            pctl.ClosePlot() # Release the file - or we can't rename it
 
-        # TODO: add Excellon drill file export here
+            plotfile = os.path.splitext(sourceBoardFile)[0] + "-" + layername + ".gbr"
+            newname = os.path.splitext(sourceBoardFile)[0] + "." + edge_ext
+
+            if not os.path.isfile(plotfile):
+                report += "Could not plot " + plotfile + "\n"
+                sysExit = 2
+            else:
+                if os.path.isfile(newname):
+                    report += "Deleting existing " + newname + "\n"
+                    os.remove(newname)
+                report += "Renaming " + plotfile + " to " + newname + "\n"
+                os.rename(plotfile, newname)
+                if not os.path.isfile(newname):
+                    report += "Could not rename " + newname + "\n"
+                    sysExit = 2
+                else:
+                    filesToZip.append(newname)
+
+
+        # Excellon drill file
         # https://gitlab.com/kicad/code/kicad/-/blob/master/demos/python_scripts_examples/gen_gerber_and_drill_files_board.py
 
+        # Fabricators need drill files.
+        # sometimes a drill map file is asked (for verification purpose)
+        drlwriter = EXCELLON_WRITER( board )
+        #drlwriter.SetMapFileFormat( PLOT_FORMAT_PDF )
+
+        mirror = False
+        minimalHeader = False
+        offset = VECTOR2I(0,0)
+        # False to generate 2 separate drill files (one for plated holes, one for non plated holes)
+        # True to generate only one drill file
+        mergeNPTH = True
+        drlwriter.SetOptions( mirror, minimalHeader, offset, mergeNPTH )
+
+        metricFmt = True
+        drlwriter.SetFormat( metricFmt )
+
+        genDrl = True
+        genMap = True
+        drlwriter.CreateDrillandMapFilesSet( pctl.GetPlotDirName(), genDrl, genMap )
+        
+        if mergeNPTH:
+            holes = os.path.splitext(sourceBoardFile)[0] + ".drl"
+            if os.path.isfile(holes):
+                filesToZip.append(holes)
+            else:
+                report += "No drill file created\n"
+        else:
+            npth = os.path.splitext(sourceBoardFile)[0] + "-NPTH.drl"
+            if os.path.isfile(npth):
+                filesToZip.append(npth)
+            else:
+                report += "No NPTH drill file created\n"
+
+            pth = os.path.splitext(sourceBoardFile)[0] + "-PTH.drl"
+            if os.path.isfile(pth):
+                filesToZip.append(pth)
+            else:
+                report += "No PTH drill file created\n"
+
+        # One can create a text file to report drill statistics
+        rptfn = pctl.GetPlotDirName() + 'drill_report.rpt'
+        report += "Drill report: {}\n".format( rptfn )
+        drlwriter.GenDrillReportFile( rptfn )
+
+
         # Zip the files
+
         zf = zipfile.ZipFile(zipFilename, "w")
         for filename in filesToZip:
             zf.write(filename, os.path.basename(filename), compress_type=zipfile.ZIP_DEFLATED)
@@ -201,6 +276,7 @@ class CAMmer():
         if os.path.isfile(oi):
             zf.write(oi, os.path.basename(oi), compress_type=zipfile.ZIP_DEFLATED)
         zf.close()
+
 
         if sysExit < 0:
             sysExit = 0
