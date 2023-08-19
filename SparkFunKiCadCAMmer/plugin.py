@@ -71,6 +71,21 @@ class CAMmerPlugin(pcbnew.ActionPlugin, object):
         for i in range(numlayers):
             layertable[board.GetLayerName(i)] = i
 
+        # Check the number of copper layers. Delete unwanted layers from the table.
+        wantedCopper = []
+        if board.GetCopperLayerCount() >= 2:
+            wantedCopper.extend(['F.Cu','B.Cu'])
+        if board.GetCopperLayerCount() >= 4:
+            wantedCopper.extend(['In1.Cu','In2.Cu'])
+        if board.GetCopperLayerCount() >= 6:
+            wantedCopper.extend(['In3.Cu','In4.Cu'])
+        deleteLayers = []
+        for layer in layertable.keys():
+            if layer[-3:] == ".Cu":
+                if layer not in wantedCopper:
+                    deleteLayers.append(layer)
+        for layer in deleteLayers:
+            layertable.pop(layer, None)
 
         def run_cammer(dlg, p_cammer):
             self.logger.log(logging.INFO, "Running CAMmer")

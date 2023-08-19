@@ -73,8 +73,9 @@ class CAMmer():
                 zipFilename = os.path.split(sourceBoardFile)[1] # Get the file path tail
                 zipFilename = os.path.join(outputPath, os.path.splitext(zipFilename)[0] + ".zip")
         else: # Running in a plugin
-            outputPath = os.path.split(board.GetFileName())[0] # Get the file path head
-            zipFilename = os.path.split(board.GetFileName())[1] # Get the file path tail
+            sourceBoardFile = board.GetFileName()
+            outputPath = os.path.split(sourceBoardFile)[0] # Get the file path head
+            zipFilename = os.path.split(sourceBoardFile)[1] # Get the file path tail
             zipFilename = os.path.join(outputPath, os.path.splitext(zipFilename)[0] + ".zip")
 
         if board is None:
@@ -96,7 +97,6 @@ class CAMmer():
                     report += "User does not want to overwrite the files. Quitting.\n"
                     sysExit = 1
                     return sysExit, report
-
 
         # Build layer table
         layertable = {}
@@ -228,7 +228,7 @@ class CAMmer():
 
         mirror = False
         minimalHeader = False
-        offset = VECTOR2I(0,0)
+        offset = board.GetDesignSettings().GetAuxOrigin() # Was: offset = VECTOR2I(0,0)
         # False to generate 2 separate drill files (one for plated holes, one for non plated holes)
         # True to generate only one drill file
         mergeNPTH = True
@@ -238,7 +238,7 @@ class CAMmer():
         drlwriter.SetFormat( metricFmt )
 
         genDrl = True
-        genMap = True
+        genMap = False
         drlwriter.CreateDrillandMapFilesSet( pctl.GetPlotDirName(), genDrl, genMap )
         
         if mergeNPTH:
