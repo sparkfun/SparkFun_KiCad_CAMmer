@@ -81,11 +81,11 @@ class CAMmerPlugin(pcbnew.ActionPlugin, object):
                 layers = dlg.CurrentSettings()["Layers"]
                 layersCommand = ""
                 for layer,include in layers.items():
-                    if include:
+                    if include == 'true': # JSON format
                         if layersCommand == "":
-                            layersCommand = str(layer)
+                            layersCommand = layer
                         else:
-                            layersCommand = layersCommand + "," + str(layer)
+                            layersCommand = layersCommand + "," + layer
 
                 if layersCommand != "":
                     command.extend(['-l', layersCommand])
@@ -93,11 +93,11 @@ class CAMmerPlugin(pcbnew.ActionPlugin, object):
                 edges = dlg.CurrentSettings()["Edges"]
                 edgesCommand = ""
                 for edge,include in edges.items():
-                    if include:
+                    if include == 'true': # JSON format
                         if edgesCommand == "":
-                            edgesCommand = str(edge)
+                            edgesCommand = edge
                         else:
-                            edgesCommand = edgesCommand + "," + str(edge)
+                            edgesCommand = edgesCommand + "," + edge
 
                 if edgesCommand != "":
                     command.extend(['-e', edgesCommand])

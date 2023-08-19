@@ -1,10 +1,12 @@
 import os
 import sys
 from argparse import ArgumentParser
-import pcbnew
 import logging
 from datetime import datetime
 import wx
+import zipfile
+
+from pcbnew import *
 
 class CAMmer():
     def __init__(self):
@@ -42,14 +44,14 @@ class CAMmer():
 
         if logger is None:
             logger = logging.getLogger()
-            logger.setLevel([ logging.WARNING, logging.DEBUG ][args.verbose])
+            logger.setLevel(logging.DEBUG)
 
         logger.info('CAMMER START: ' + datetime.now().isoformat())
 
         # Read the args
         sourceBoardFile = args.path
         layers = args.layers
-        edges = args.edge
+        edges = args.edges
 
         # Check if this is running in a plugin
         if board is None:
@@ -66,14 +68,14 @@ class CAMmer():
                     return sysExit, report
 
                 # Load source board from file
-                board = pcbnew.LoadBoard(sourceBoardFile)
+                board = LoadBoard(sourceBoardFile)
                 outputPath = os.path.split(sourceBoardFile)[0] # Get the file path head
-                zipFile = os.path.split(sourceBoardFile)[1] # Get the file path tail
-                zipFile = os.path.join(outputPath, os.path.splitext(zipFile)[0] + ".zip")
+                zipFilename = os.path.split(sourceBoardFile)[1] # Get the file path tail
+                zipFilename = os.path.join(outputPath, os.path.splitext(zipFilename)[0] + ".zip")
         else: # Running in a plugin
             outputPath = os.path.split(board.GetFileName())[0] # Get the file path head
-            zipFile = os.path.split(board.GetFileName())[1] # Get the file path tail
-            zipFile = os.path.join(outputPath, os.path.splitext(zipFile)[0] + ".zip")
+            zipFilename = os.path.split(board.GetFileName())[1] # Get the file path tail
+            zipFilename = os.path.join(outputPath, os.path.splitext(zipFilename)[0] + ".zip")
 
         if board is None:
             report += "Could not load board. Quitting.\n"
@@ -86,7 +88,7 @@ class CAMmer():
             return sysExit, report
 
         # Check if about to overwrite a zip file
-        if os.path.isfile(zipFile):
+        if os.path.isfile(zipFilename):
             if wx.GetApp() is not None:
                 resp = wx.MessageBox("You are about to overwrite existing files.\nAre you sure?",
                             'Warning', wx.OK | wx.CANCEL | wx.ICON_WARNING)
@@ -96,8 +98,109 @@ class CAMmer():
                     return sysExit, report
 
 
-        # ADD MUCH STUFF HERE
+        # Build layer table
+        layertable = {}
+        numlayers = PCB_LAYER_ID_COUNT
+        for i in range(numlayers):
+            layertable[board.GetLayerName(i)] = i
 
+        # Protel file extensions
+        file_ext = {
+            "F.Cu": "GTL",
+            "In1.Cu": "GL1",
+            "In2.Cu": "GL2",
+            "In3.Cu": "GL3",
+            "In4.Cu": "GL4",
+            "B.Cu": "GBL",
+            "F.Mask": "GTS",
+            "B.Mask": "GBS",
+            "F.Paste": "GTP",
+            "B.Paste": "GBP",
+            "F.Silkscreen": "GTO",
+            "B.Silkscreen": "GBO",
+            "Edge.Cuts": "GKO"
+        }
+
+        # Start plotting: https://gitlab.com/kicad/code/kicad/-/blob/master/demos/python_scripts_examples/plot_board.py
+
+        pctl = PLOT_CONTROLLER(board)
+
+        popt = pctl.GetPlotOptions()
+
+        # Set some important plot options:
+        # One cannot plot the frame references, because the board does not know
+        # the frame references.
+        popt.SetPlotFrameRef(False)
+        popt.SetSketchPadLineWidth(FromMM(0.1))
+
+        popt.SetAutoScale(False)
+        popt.SetScale(1)
+        popt.SetMirror(False)
+        popt.SetUseGerberAttributes(True)
+        popt.SetScale(1)
+        popt.SetUseAuxOrigin(True)
+
+        # This by gerbers only (also the name is truly horrid!)
+        popt.SetSubtractMaskFromSilk(False) #remove solder mask from silk to be sure there is no silk on pads
+
+        filesToZip = []
+
+        for layer in layers.split(","):
+            if layer not in file_ext.keys():
+                report += "Unknown layer " + layer + "!\n"
+                sysExit= 2
+            else:
+                layername = layer.replace(".", "_")
+                pctl.SetLayer(layertable[layer])
+                pctl.OpenPlotfile(layername, PLOT_FORMAT_GERBER)
+                pctl.PlotLayer()
+                pctl.ClosePlot() # Release the file - or we can't rename it
+
+                plotfile = os.path.splitext(sourceBoardFile)[0] + "-" + layername + ".gbr"
+                newname = os.path.splitext(sourceBoardFile)[0] + "." + file_ext[layer]
+
+                if not os.path.isfile(plotfile):
+                    report += "Could not plot " + plotfile + "\n"
+                    sysExit = 2
+                else:
+                    if os.path.isfile(newname):
+                        report += "Deleting existing " + newname + "\n"
+                        os.remove(newname)
+                    report += "Renaming " + plotfile + " to " + newname + "\n"
+                    os.rename(plotfile, newname)
+                    if not os.path.isfile(newname):
+                        report += "Could not rename " + newname + "\n"
+                        sysExit = 2
+                    else:
+                        filesToZip.append(newname)
+
+        edge = []
+        edge_ext = ""
+        for e in edges.split(","):
+            if e in file_ext.keys():
+                edge_ext = file_ext[e]
+                layername = e.replace(".", "_")
+                edge.append(layertable[e])
+
+        if edge_ext == "":
+            report += "Unknown edge(s) " + str(edges) + "\n"
+            sysExit= 2
+        else:
+            # TODO: add edge layer merge-and-plot here. Try SetLayerSelection and SetPlotOnAllLayersSelection
+            pass
+
+        # TODO: add Excellon drill file export here
+        # https://gitlab.com/kicad/code/kicad/-/blob/master/demos/python_scripts_examples/gen_gerber_and_drill_files_board.py
+
+        # Zip the files
+        zf = zipfile.ZipFile(zipFilename, "w")
+        for filename in filesToZip:
+            zf.write(filename, os.path.basename(filename), compress_type=zipfile.ZIP_DEFLATED)
+        # Include the ordering_instructions - if present
+        oi = os.path.join(outputPath, "ordering_instructions.txt")
+        if os.path.isfile(oi):
+            zf.write(oi, os.path.basename(oi), compress_type=zipfile.ZIP_DEFLATED)
+        zf.close()
 
         if sysExit < 0:
             sysExit = 0
