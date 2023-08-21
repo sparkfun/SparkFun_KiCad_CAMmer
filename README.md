@@ -29,9 +29,9 @@ Click the CAMmer icon to open the GUI:
 
 We have deliberately kept the GUI options as simple as possible:
 
-* In column 1: select your copper, silkscreen and solder mask layers
+* In the `Layers` column: select your copper, silkscreen and solder mask layers
   * The CAMmer will select these for you based on the number of copper layers, but you can override if you want to
-* In column 2: select which layer(s) will be used to generate the board outline
+* In the `Edges` column: select which layer(s) will be used to generate the board outline
   * For SparkFun panels, the default is `Edge.Cuts` plus `User.Comments` (the SparkFun KiCad Panelizer places the V-SCORE information in `User.Comments` by default)
 
 Click **Run CAMmer** to run the CAMmer. The Gerber and drill files are created and zipped automatically.
@@ -48,7 +48,7 @@ The code for this plugin is licensed under the MIT license. Please see `LICENSE`
 
 `cammer.py` is based heavily on the [KiCad code example](https://gitlab.com/kicad/code/kicad/-/blob/master/demos/python_scripts_examples/plot_board.py).
 
-The [wxFormBuilder](https://github.com/wxFormBuilder/wxFormBuilder/releases) `text_dialog.fbp` and associated code is based on [Greg Davill (@gregdavill)](https://github.com/gregdavill)'s [KiBuzzard](https://github.com/gregdavill/KiBuzzard).
+The [wxFormBuilder](https://github.com/wxFormBuilder/wxFormBuilder/releases) `text_dialog.fbp` and associated code is based on [@openscopeproject](https://github.com/openscopeproject)'s [Interactive HTML BOM plugin for KiCad](https://github.com/openscopeproject/InteractiveHtmlBom). Special thanks to [@qu1ck](https://github.com/qu1ck) for the many useful contributions on [KiCad Info](https://forum.kicad.info/).
 
 ## How It Works
 
