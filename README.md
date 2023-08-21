@@ -50,6 +50,8 @@ The code for this plugin is licensed under the MIT license. Please see `LICENSE`
 
 The [wxFormBuilder](https://github.com/wxFormBuilder/wxFormBuilder/releases) `text_dialog.fbp` and associated code is based on [@openscopeproject](https://github.com/openscopeproject)'s [Interactive HTML BOM plugin for KiCad](https://github.com/openscopeproject/InteractiveHtmlBom). Special thanks to [@qu1ck](https://github.com/qu1ck) for the many useful contributions on [KiCad Info](https://forum.kicad.info/).
 
+We also used code from [@bennymeg](https://github.com/bennymeg)'s [JLC-Plugin-for-KiCad](https://github.com/bennymeg/JLC-Plugin-for-KiCad/blob/6f1426d9724da8e9da48b8a821fa2a821bae9856/plugins/process.py#L116-L119)
+
 ## How It Works
 
 The plugin GUI itself is designed with [wxFormBuilder](https://github.com/wxFormBuilder/wxFormBuilder/releases) and stored in `text_dialog.fbp`.
