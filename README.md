@@ -30,9 +30,11 @@ Click the CAMmer icon to open the GUI:
 We have deliberately kept the GUI options as simple as possible:
 
 * In column 1: select your copper, silkscreen and solder mask layers
+  * The CAMmer will select these for you based on the number of copper layers, but you can override if you want to
 * In column 2: select which layer(s) will be used to generate the board outline
+  * For SparkFun panels, the default is `Edge.Cuts` plus `User.Comments` (the SparkFun KiCad Panelizer places the V-SCORE information in `User.Comments` by default)
 
-Click **Run CAMmer** to run the CAMmer.
+Click **Run CAMmer** to run the CAMmer. The Gerber and drill files are created and zipped automatically.
 
 ![Run CAMmer](./img/run_cammer_2.png)
 
