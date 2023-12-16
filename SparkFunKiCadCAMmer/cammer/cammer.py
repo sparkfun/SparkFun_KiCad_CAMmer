@@ -102,15 +102,11 @@ class CAMmer():
         layertable = {}
         numlayers = PCB_LAYER_ID_COUNT
         for i in range(numlayers):
-            layertable[board.GetLayerName(i)] = i
+            layertable[i] = {'standardName': board.GetStandardLayerName(i), 'actualName': board.GetLayerName(i)}
 
         # Protel file extensions
         file_ext = {
             "F.Cu": "GTL",
-            "In1.Cu": "GL1",
-            "In2.Cu": "GL2",
-            "In3.Cu": "GL3",
-            "In4.Cu": "GL4",
             "B.Cu": "GBL",
             "F.Mask": "GTS",
             "B.Mask": "GBS",
@@ -120,6 +116,8 @@ class CAMmer():
             "B.Silkscreen": "GBO",
             "Edge.Cuts": "GKO"
         }
+        for i in range(1,31): # Add 30 internal copper layers
+            file_ext["In{}.Cu".format(i)] = "GL{}".format(i)
 
         # Start plotting: https://gitlab.com/kicad/code/kicad/-/blob/master/demos/python_scripts_examples/plot_board.py
 
@@ -155,7 +153,12 @@ class CAMmer():
                 sysExit= 2
             else:
                 layername = layer.replace(".", "_")
-                pctl.SetLayer(layertable[layer])
+                layerNumber = None
+                for id, names in layertable.items():
+                    if layer in names['standardName']:
+                        layerNumber = id
+                        break
+                pctl.SetLayer(layerNumber)
                 pctl.OpenPlotfile(layername, PLOT_FORMAT_GERBER)
                 pctl.PlotLayer()
                 pctl.ClosePlot() # Release the file - or we can't rename it
@@ -188,8 +191,10 @@ class CAMmer():
             if e in file_ext.keys():
                 edge_ext = file_ext[e]
                 layername = e.replace(".", "_")
-            if e in layertable.keys():
-                allEdges.push_back(layertable[e])
+            for id, names in layertable.items():
+                if e in names['standardName']:
+                    allEdges.push_back(id)
+                    break
 
         if edge_ext == "":
             report += "Unknown edge(s): " + str(edges) + "\n"
