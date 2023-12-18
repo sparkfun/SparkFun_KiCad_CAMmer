@@ -101,7 +101,12 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
         for key in self.config.keys():
             deleteThese = []
             for layer in self.config[key].keys():
-                if layer not in layertable.keys():
+                found = False
+                for id, names in self.layertable.items():
+                    if layer in names['standardName']:
+                        found = True
+                        break
+                if not found:
                     deleteThese.append(layer) # Avoids "dictionary changed size during iteration"
             for d in deleteThese:
                 self.config[key].pop(d, None)
@@ -119,7 +124,12 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
                     hasKey = layer in self.config[key].keys()
                 except:
                     pass
-                if (layer not in layertable.keys()) or hasKey:
+                found = False
+                for id, names in self.layertable.items():
+                    if layer in names['standardName']:
+                        found = True
+                        break
+                if (not found) or hasKey:
                     deleteThese.append(layer)
             for d in deleteThese:
                 defaults[key].pop(d, None)
@@ -129,9 +139,9 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
         # Add any extra layers which are present in layertable - default these to disabled
         for key in self.config.keys():
             addThese = []
-            for layer in layertable.keys():
-                if layer not in self.config[key].keys():
-                    addThese.append(layer)
+            for id, names in self.layertable.items():
+                if names['standardName'] not in self.config[key].keys():
+                    addThese.append(names['standardName'])
             for a in addThese:
                 d = {a: 'false'} # JSON style
                 self.config[key].update(d)
@@ -176,7 +186,12 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
             e = "1" if enabled == 'true' else "0" # JSON style
             self.LayersGrid.SetCellValue(row, 0, e)
             self.LayersGrid.SetCellRenderer(row, 0, wx.grid.GridCellBoolRenderer())
-            self.LayersGrid.SetCellValue(row, 1, layer)
+            layerName = layer
+            for id, names in self.layertable.items():
+                if layer in names['standardName']:
+                    if names['actualName'] != names['standardName']:
+                        layerName += " (" + names['actualName'] + ")"
+            self.LayersGrid.SetCellValue(row, 1, layerName)
             self.LayersGrid.SetReadOnly(row, 1)
             row += 1
             
@@ -191,7 +206,12 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
             e = "1" if enabled == 'true' else "0" # JSON style
             self.EdgesGrid.SetCellValue(row, 0, e)
             self.EdgesGrid.SetCellRenderer(row, 0, wx.grid.GridCellBoolRenderer())
-            self.EdgesGrid.SetCellValue(row, 1, layer)
+            layerName = layer
+            for id, names in self.layertable.items():
+                if layer in names['standardName']:
+                    if names['actualName'] != names['standardName']:
+                        layerName += " (" + names['actualName'] + ")"
+            self.EdgesGrid.SetCellValue(row, 1, layerName)
             self.EdgesGrid.SetReadOnly(row, 1)
             row += 1
 
@@ -200,14 +220,18 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
 
         for row in range(self.LayersGrid.GetNumberRows()):
             enabled = 'true' if (self.LayersGrid.GetCellValue(row, 0) == "1") else 'false' # JSON style
-            layer = self.LayersGrid.GetCellValue(row, 1)
-            d = {layer: enabled}
+            layername = self.LayersGrid.GetCellValue(row, 1)
+            if " (" in layername:
+                layername = layername[:layername.find(" (")] # Trim the actual name - if present
+            d = {layername: enabled}
             params['Layers'].update(d)
 
         for row in range(self.EdgesGrid.GetNumberRows()):
             enabled = 'true' if (self.EdgesGrid.GetCellValue(row, 0) == "1") else 'false' # JSON style
-            layer = self.EdgesGrid.GetCellValue(row, 1)
-            d = {layer: enabled}
+            layername = self.EdgesGrid.GetCellValue(row, 1)
+            if " (" in layername:
+                layername = layername[:layername.find(" (")] # Trim the actual name - if present
+            d = {layername: enabled}
             params['Edges'].update(d)
 
         return params
