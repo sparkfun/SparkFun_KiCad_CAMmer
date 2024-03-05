@@ -116,8 +116,8 @@ class CAMmer():
             "B.Silkscreen": "GBO",
             "Edge.Cuts": "GKO"
         }
-        for i in range(1,31): # Add 30 internal copper layers
-            file_ext["In{}.Cu".format(i)] = "GL{}".format(i)
+        for i in range(1,31): # Add 30 internal copper layers. Convert In1.Cu to GL2 - see #3
+            file_ext["In{}.Cu".format(i)] = "GL{}".format(i + 1)
 
         # Start plotting: https://gitlab.com/kicad/code/kicad/-/blob/master/demos/python_scripts_examples/plot_board.py
 
