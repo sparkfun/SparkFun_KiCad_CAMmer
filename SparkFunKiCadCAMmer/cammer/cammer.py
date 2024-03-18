@@ -8,6 +8,28 @@ import zipfile
 
 from pcbnew import *
 
+# sub folder for our resource files
+_RESOURCE_DIRECTORY = os.path.join("..", "resource")
+
+#https://stackoverflow.com/a/50914550
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, _RESOURCE_DIRECTORY, relative_path)
+
+def get_version(rel_path: str) -> str:
+    try: 
+        with open(resource_path(rel_path), encoding='utf-8') as fp:
+            for line in fp.read().splitlines():
+                if line.startswith("__version__"):
+                    delim = '"' if '"' in line else "'"
+                    return line.split(delim)[1]
+            raise RuntimeError("Unable to find version string.")
+    except:
+        raise RuntimeError("Unable to find _version.py.")
+
+_APP_VERSION = get_version("_version.py")
+
 class CAMmer():
     def __init__(self):
         pass
@@ -15,6 +37,9 @@ class CAMmer():
     def args_parse(self, args):
         # set up command-line arguments parser
         parser = ArgumentParser(description="A script to generate and zip PCB Gerber and drill files.")
+        parser.add_argument(
+            "-v", "--version", action="version", version="%(prog)s " + _APP_VERSION
+        )
         parser.add_argument(
             "-p", "--path", help="Path to the *.kicad_pcb file"
         )
