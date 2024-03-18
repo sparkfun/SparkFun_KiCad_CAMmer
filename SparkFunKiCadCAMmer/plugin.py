@@ -27,14 +27,16 @@ class CAMmerPlugin(pcbnew.ActionPlugin, object):
         
         self._pcbnew_frame = None
 
+        self.supportedVersions = ['7.','8.']
+
         self.kicad_build_version = pcbnew.GetBuildVersion()
 
-    def IsVersion(self, VersionStr):
-        for v in VersionStr:
-            if v in self.kicad_build_version:
+    def IsSupported(self):
+        for v in self.supportedVersions:
+            if self.kicad_build_version.startswith(v):
                 return True
         return False
-
+    
     def Run(self):
         if self._pcbnew_frame is None:
             try:
@@ -89,7 +91,7 @@ class CAMmerPlugin(pcbnew.ActionPlugin, object):
         def run_cammer(dlg, p_cammer):
             self.logger.log(logging.INFO, "Running CAMmer")
 
-            if self.IsVersion(['7.']):
+            if self.IsSupported():
                 command = []
 
                 layers = dlg.CurrentSettings()["Layers"]
@@ -131,6 +133,9 @@ class CAMmerPlugin(pcbnew.ActionPlugin, object):
                     if sysExit > 0:
                         wx.MessageBox("CAMmer " + ("warning" if (sysExit == 1) else "error") + ".\nPlease check cammer.log for details.",
                             ("Warning" if (sysExit == 1) else "Error"), wx.OK | (wx.ICON_WARNING if (sysExit == 1) else wx.ICON_ERROR))
+                    else:
+                        wx.MessageBox("CAMmer complete.\nPlease check cammer.log for details.",
+                            "Info", wx.OK | wx.ICON_INFORMATION)
                 else:
                     self.logger.log(logging.ERROR, "Could not get the board")
 
