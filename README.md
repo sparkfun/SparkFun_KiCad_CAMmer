@@ -1,4 +1,4 @@
-# SparkFun PCB CAMmer plugin for KiCad 7
+# SparkFun PCB CAMmer plugin for KiCad 7 / 8
 
 This plugin generates the Gerber and Drill files for a KiCad PCB.
 
