@@ -133,6 +133,9 @@ class CAMmerPlugin(pcbnew.ActionPlugin, object):
                     if sysExit > 0:
                         wx.MessageBox("CAMmer " + ("warning" if (sysExit == 1) else "error") + ".\nPlease check cammer.log for details.",
                             ("Warning" if (sysExit == 1) else "Error"), wx.OK | (wx.ICON_WARNING if (sysExit == 1) else wx.ICON_ERROR))
+                    else:
+                        wx.MessageBox("CAMmer complete.\nPlease check cammer.log for details.",
+                            "Info", wx.OK | wx.ICON_INFORMATION)
                 else:
                     self.logger.log(logging.ERROR, "Could not get the board")
 
