@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 import wx
 import zipfile
+import pcbnew
 
 from pcbnew import *
 
@@ -97,11 +98,34 @@ class CAMmer():
                 outputPath = os.path.split(sourceBoardFile)[0] # Get the file path head
                 zipFilename = os.path.split(sourceBoardFile)[1] # Get the file path tail
                 zipFilename = os.path.join(outputPath, os.path.splitext(zipFilename)[0] + ".zip")
+
         else: # Running in a plugin
             sourceBoardFile = board.GetFileName()
             outputPath = os.path.split(sourceBoardFile)[0] # Get the file path head
             zipFilename = os.path.split(sourceBoardFile)[1] # Get the file path tail
             zipFilename = os.path.join(outputPath, os.path.splitext(zipFilename)[0] + ".zip")
+
+            # Check if PCB needs to be saved first
+            if wx.GetApp() is not None:
+                resp = wx.MessageBox("Do you want to save the PCB first?",
+                            'Save PCB?', wx.YES_NO | wx.ICON_INFORMATION)
+                if resp == wx.YES:
+                    report += "Board saved by user.\n"
+                    board.Save(board.GetFileName())
+            else:
+                board.Save(board.GetFileName())
+
+            # Check if user wants to build zone fills
+            if wx.GetApp() is not None:
+                resp = wx.MessageBox("Do you want to build the zone fills?",
+                            'Fill zones?', wx.YES_NO | wx.ICON_INFORMATION)
+                if resp == wx.YES:
+                    report += "Zones filled by user.\n"
+                    fillerTool = pcbnew.ZONE_FILLER(board)
+                    fillerTool.Fill(board.Zones())
+            else:
+                fillerTool = pcbnew.ZONE_FILLER(board)
+                fillerTool.Fill(board.Zones())
 
         if board is None:
             report += "Could not load board. Quitting.\n"
