@@ -115,18 +115,6 @@ class CAMmer():
             else:
                 board.Save(board.GetFileName())
 
-            # Check if user wants to build zone fills
-            if wx.GetApp() is not None:
-                resp = wx.MessageBox("Do you want to build the zone fills?",
-                            'Fill zones?', wx.YES_NO | wx.ICON_INFORMATION)
-                if resp == wx.YES:
-                    report += "Zones filled by user.\n"
-                    fillerTool = pcbnew.ZONE_FILLER(board)
-                    fillerTool.Fill(board.Zones())
-            else:
-                fillerTool = pcbnew.ZONE_FILLER(board)
-                fillerTool.Fill(board.Zones())
-
         if board is None:
             report += "Could not load board. Quitting.\n"
             sysExit = 2
@@ -167,6 +155,12 @@ class CAMmer():
         }
         for i in range(1,31): # Add 30 internal copper layers. Convert In1.Cu to GL2 - see #3
             file_ext["In{}.Cu".format(i)] = "GL{}".format(i + 1)
+
+        # Fill the zones
+        # This prevents badness with pads on "F.Cu, B.Cu and connected layers" and "Connected layers only"
+        report += "Zones filled by CAMmer.\n"
+        fillerTool = pcbnew.ZONE_FILLER(board)
+        fillerTool.Fill(board.Zones())
 
         # Start plotting: https://gitlab.com/kicad/code/kicad/-/blob/master/demos/python_scripts_examples/plot_board.py
 
