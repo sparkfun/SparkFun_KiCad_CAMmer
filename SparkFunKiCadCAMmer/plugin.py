@@ -27,7 +27,7 @@ class CAMmerPlugin(pcbnew.ActionPlugin, object):
         
         self._pcbnew_frame = None
 
-        self.supportedVersions = ['7.','8.']
+        self.supportedVersions = ['7.','8.','9.']
 
         self.kicad_build_version = pcbnew.GetBuildVersion()
 
@@ -91,56 +91,56 @@ class CAMmerPlugin(pcbnew.ActionPlugin, object):
         def run_cammer(dlg, p_cammer):
             self.logger.log(logging.INFO, "Running CAMmer")
 
-            if self.IsSupported():
-                command = []
+            if not self.IsSupported():
+                # Log a warning if this version of KiCad has not been tested
+                self.logger.log(logging.WARNING, "Version check failed. \"{}\" may not be supported. CAMming may fail".format(self.kicad_build_version))
 
-                layers = dlg.CurrentSettings()["Layers"]
-                layersCommand = ""
-                for layer,include in layers.items():
-                    if include == 'true': # JSON format
-                        if layersCommand == "":
-                            layersCommand = layer
-                        else:
-                            layersCommand = layersCommand + "," + layer
+            command = []
 
-                if layersCommand != "":
-                    command.extend(['-l', layersCommand])
-
-                edges = dlg.CurrentSettings()["Edges"]
-                edgesCommand = ""
-                for edge,include in edges.items():
-                    if include == 'true': # JSON format
-                        if edgesCommand == "":
-                            edgesCommand = edge
-                        else:
-                            edgesCommand = edgesCommand + "," + edge
-
-                if edgesCommand != "":
-                    command.extend(['-e', edgesCommand])
-
-                self.logger.log(logging.INFO, command)
-
-                board = pcbnew.GetBoard()
-
-                if board is not None:
-                    sysExit, report = p_cammer.startCAMmerCommand(command, board, self.logger)
-                    logWarn = logging.INFO
-                    if sysExit >= 1:
-                        logWarn = logging.WARN
-                    if sysExit >= 2:
-                        logWarn = logging.ERROR
-                    self.logger.log(logWarn, report)
-                    if sysExit > 0:
-                        wx.MessageBox("CAMmer " + ("warning" if (sysExit == 1) else "error") + ".\nPlease check cammer.log for details.",
-                            ("Warning" if (sysExit == 1) else "Error"), wx.OK | (wx.ICON_WARNING if (sysExit == 1) else wx.ICON_ERROR))
+            layers = dlg.CurrentSettings()["Layers"]
+            layersCommand = ""
+            for layer,include in layers.items():
+                if include == 'true': # JSON format
+                    if layersCommand == "":
+                        layersCommand = layer
                     else:
-                        wx.MessageBox("CAMmer complete.\nPlease check cammer.log for details.",
-                            "Info", wx.OK | wx.ICON_INFORMATION)
-                else:
-                    self.logger.log(logging.ERROR, "Could not get the board")
+                        layersCommand = layersCommand + "," + layer
 
+            if layersCommand != "":
+                command.extend(['-l', layersCommand])
+
+            edges = dlg.CurrentSettings()["Edges"]
+            edgesCommand = ""
+            for edge,include in edges.items():
+                if include == 'true': # JSON format
+                    if edgesCommand == "":
+                        edgesCommand = edge
+                    else:
+                        edgesCommand = edgesCommand + "," + edge
+
+            if edgesCommand != "":
+                command.extend(['-e', edgesCommand])
+
+            self.logger.log(logging.INFO, command)
+
+            board = pcbnew.GetBoard()
+
+            if board is not None:
+                sysExit, report = p_cammer.startCAMmerCommand(command, board, self.logger)
+                logWarn = logging.INFO
+                if sysExit >= 1:
+                    logWarn = logging.WARNING
+                if sysExit >= 2:
+                    logWarn = logging.ERROR
+                self.logger.log(logWarn, report)
+                if sysExit > 0:
+                    wx.MessageBox("CAMmer " + ("warning" if (sysExit == 1) else "error") + ".\nPlease check cammer.log for details.",
+                        ("Warning" if (sysExit == 1) else "Error"), wx.OK | (wx.ICON_WARNING if (sysExit == 1) else wx.ICON_ERROR))
+                else:
+                    wx.MessageBox("CAMmer complete.\nPlease check cammer.log for details.",
+                        "Info", wx.OK | wx.ICON_INFORMATION)
             else:
-                self.logger.log(logging.ERROR, "Version check failed. \"{}\" not supported".format(self.kicad_build_version))
+                self.logger.log(logging.ERROR, "Could not get the board")
 
             dlg.EndModal(wx.ID_OK)
 
