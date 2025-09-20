@@ -198,7 +198,7 @@ class CAMmer():
                 layername = layer.replace(".", "_")
                 layerNumber = None
                 for id, names in layertable.items():
-                    if layer in names['standardName']:
+                    if layer == names['standardName']:
                         layerNumber = id
                         break
                 pctl.SetLayer(layerNumber)
@@ -235,7 +235,7 @@ class CAMmer():
                 edge_ext = file_ext[e]
                 layername = e.replace(".", "_")
             for id, names in layertable.items():
-                if e in names['standardName']:
+                if e == names['standardName']:
                     allEdges.push_back(id)
                     break
 

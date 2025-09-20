@@ -103,7 +103,7 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
             for layer in self.config[key].keys():
                 found = False
                 for id, names in self.layertable.items():
-                    if layer in names['standardName']:
+                    if layer == names['standardName']:
                         found = True
                         break
                 if not found:
@@ -126,7 +126,7 @@ class Dialog(dialog_text_base.DIALOG_TEXT_BASE):
                     pass
                 found = False
                 for id, names in self.layertable.items():
-                    if layer in names['standardName']:
+                    if layer == names['standardName']:
                         found = True
                         break
                 if (not found) or hasKey:
